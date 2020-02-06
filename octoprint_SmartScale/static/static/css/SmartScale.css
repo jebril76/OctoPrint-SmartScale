@@ -1,8 +1,0 @@
-.SmartScale-disabled{
-    opacity: 0.3;
-    cursor: not-allowed;
-    user-select: none;
-}
-.activeFilament{
-    color: red;
-}
