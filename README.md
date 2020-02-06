@@ -1,4 +1,4 @@
-OctoPrint Plugin Skeleton
+OctoPrint Plugin SmartScale
 =========================
 
 This is a basic plugin skeleton that you can use as a basis for your own OctoPrint plugin.
