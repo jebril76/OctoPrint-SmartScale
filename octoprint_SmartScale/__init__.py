@@ -1,7 +1,6 @@
 # coding=utf-8
 ###
 ###
-###            self._logger.info("File '" + selectedFile + "' selected. Determining number of layers.")
 ###
 from __future__ import absolute_import
 import sys
