@@ -6,10 +6,15 @@ This plugin will let you connect to a ESP8266 based Filament Scale. It will show
 BOM for the SmartScale:
 
 1 ESP8266 Wemos D1 Mini
+
 1 BME280 (4 Pin Version)
+
 2 Loadcells 5kg
+
 1 Hx711 Modul
+
 1 Ssd1306
+
 
 
 
