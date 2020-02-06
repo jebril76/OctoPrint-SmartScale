@@ -212,6 +212,8 @@ class SmartScalePlugin(
 				displayVersion=self._plugin_version
 			)
 		)
+__plugin_name__ = "SmartScale"
+# __plugin_pythoncompat__ = ">=2.7,<4"
 def __plugin_load__():
 	global __plugin_implementation__
 	__plugin_implementation__ = SmartScalePlugin()
