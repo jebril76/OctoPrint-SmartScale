@@ -18,7 +18,7 @@ plugin_version = "0.1"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = "TODO"
+plugin_description = "This plugin will let your Octoprint connect to a ESP8266 based Filament Scale. It will show the remaining Filament under the actual Status and warn you if there is not enough Filament left, when starting a new printjob."
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
 plugin_author = "Karim"
