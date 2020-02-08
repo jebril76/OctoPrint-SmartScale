@@ -21,10 +21,10 @@ plugin_version = "0.1"
 plugin_description = "This plugin will let your Octoprint connect to a ESP8266 based Filament Scale. It will show the remaining Filament under the actual Status and warn you if there is not enough Filament left, when starting a new printjob."
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Karim"
+plugin_author = "jebril"
 
 # The plugin's author's mail address.
-plugin_author_email = "todo@example.com"
+plugin_author_email = "dontlikemail@gmx.de"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
 plugin_url = "https://github.com/jebril76/OctoPrint-SmartScale"
