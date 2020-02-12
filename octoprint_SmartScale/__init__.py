@@ -67,7 +67,7 @@ class SmartScalePlugin(
 				if self.thread == None and port != self._printer.get_current_connection()[1]:
 					try:
 						self.usbCon = serial.Serial(port, 115200, timeout=0.5)
-						line = self.usbCon.readline().rstrip('\r\n')
+						line = self.usbCon.readline().strip().decode('ascii')
 						if line:
 							if line.startswith('[U:') and line.endswith(']'):
 								self._logger.info("SmartScale connected to Port:" + port)
@@ -105,7 +105,7 @@ class SmartScalePlugin(
 		counter=0
 		while self.usbCon != None:
 			try:
-				line = self.usbCon.readline().rstrip('\r\n')
+				line = self.usbCon.readline().strip().decode('ascii')
 				if line:
 					if line.startswith('[U:') and line.endswith(']'):
 						counter=0
@@ -219,7 +219,7 @@ class SmartScalePlugin(
 			)
 		)
 __plugin_name__ = "SmartScale"
-# __plugin_pythoncompat__ = ">=2.7,<4"
+__plugin_pythoncompat__ = ">=2.7,<4"
 def __plugin_load__():
 	global __plugin_implementation__
 	__plugin_implementation__ = SmartScalePlugin()
