@@ -15,6 +15,7 @@ import glob
 import serial
 import octoprint.plugin
 import octoprint.events
+from octoprint.util import RepeatedTimer
 
 class SmartScalePlugin(
 	octoprint.plugin.StartupPlugin,
@@ -46,30 +47,30 @@ class SmartScalePlugin(
 			material_density=1.24,
 			settingsweight=0,
 			activefilament=0,
-			filaments=[{"date": "01.01.2020, 01:01:01", "density": 1.24, "fila": "Pla", "filaweight": 0, "spool": 50, "units": 0, "weight": 0}],
+			filaments=[{"date": "01.01.2020, 01:01:01", "density": 1.24, "fila": "Pla", "filaweight": 0, "length": 100, "spool": 50, "weight": 0}],
 			)
 	def on_startup(self, host, port):
-		self.error = ""
 		self.navlist=[]
 		self.spool_weight = float(self._settings.get(["spool_weight"]))
 		self.density = float(float(self._settings.get(["material_density"]))*2.41)
 		self.filaments = self._settings.get(["filaments"]);
-		self.usbports = []
-		self.thread = None
 		self.usbCon = None
 		self.settings_changed()
 		self.connect()
 	def connect(self):
+		self.usbports = []
+		self.thread = None
+		self.error = ""
 		self.usbports = self.scanusb()
 		if len(self.usbports) > 0:
 			for port in self.usbports:
-				if self.thread == None: and port != self._printer.get_current_connection()[1] and :
+				if self.thread == None and port != self._printer.get_current_connection()[1]:
 					try:
 						self.usbCon = serial.Serial(port, 115200, timeout=0.5)
-						self._logger.info("SmartScale connected to Port:" + port)
 						line = self.usbCon.readline().rstrip('\r\n')
 						if line:
 							if line.startswith('[U:') and line.endswith(']'):
+								self._logger.info("SmartScale connected to Port:" + port)
 								self.thread = threading.Thread(target=self.readusb, args=())
 								self.thread.daemon = True
 								self.thread.start()
@@ -121,12 +122,14 @@ class SmartScalePlugin(
 							self._plugin_manager.send_plugin_message(self._identifier, dict(navBarMessage=self.navbar))
 				else:
 					counter=counter+1
+					self._logger.info("SmartScale Timeout nr" + counter)
 					if counter>60:
 						self.usbCon = None
 						if self.thread and threading.current_thread() != self.thread:
 							self.thread.join()
 						self.thread = None
 						self.error = "Connection lost"
+						return false
 						break
 			except (OSError, serial.SerialException):
 				self.usbCon = None
@@ -184,10 +187,13 @@ class SmartScalePlugin(
 		if self._settings.get(["navpressure"])=="1":
 			self.navlist.append(6)
 		if self.usbCon != None:
+			self.connect();
 			self.usbCon.write("<coil:%.2f>" % float(self._settings.get(["coilweight"])))
 			self.usbCon.write("<cont:%.2f>" % float(self._settings.get(["containersize"])))
 			self.usbCon.write("<alti:%.2f>" % float(self._settings.get(["altitude"])))
 			self.usbCon.write("<heat:%.2f>" % float(self._settings.get(["heatertemp"])))
+			self.usbCon.write("<dens:%f>" % float(self.filaments[activefilament]["density"]))
+			self.usbCon.write("<spow:%.2f>" % float(self.filaments[activefilament]["spool"]))
 	def on_event(self, event, payload):
 		if event == "ClientAuthed":
 			self._plugin_manager.send_plugin_message(self._identifier, dict(remainingstring=self.error, weight="Error"))

@@ -45,10 +45,10 @@
 					</thead>
 					<tbody data-bind="foreach: settings.settings.plugins.SmartScale.filaments">
 						<tr>
-							<td><a href="#" data-bind="click: function(data, event) {$root.loadFilament($index, data, event);} , text: fila"></a></td>
+							<td><a href="#" data-bind="click: function(data, event) {$root.loadFilament($index, data, event);}, text: fila"></a></td>
 							<td data-bind="text: date"></td>
 							<td align=right data-bind="text: filaweight"></td>
-							<td align=right data-bind="text: units"></td>
+							<td align=right data-bind="text: length"></td>
 							<td align=right data-bind="text: spool"></td>
 							<td align=right data-bind="text: density"></td>
 							<td align=right><a href="#" data-bind="click: function(data, event) {$root.removeFilament($index, data, event);}, visible: $root.settings.settings.plugins.SmartScale.activefilament()!==$index()">Delete</a><span class="activeFilament" data-bind="visible: $root.settings.settings.plugins.SmartScale.activefilament()===$index()">Active</span>

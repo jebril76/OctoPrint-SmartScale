@@ -1,4 +1,5 @@
 $(function() {
+// Define Filament
 	function Filament(data) {
 		var self = this;
 		self.date = ko.computed(function(){
@@ -25,24 +26,27 @@ $(function() {
 			result= (data["weight"]-data["spool"]-data["coilweight"]);
 			return result.toFixed(2);
 		});
-		self.units = ko.computed(function() {
+		self.length = ko.computed(function() {
 			result = (data["weight"]-data["spool"]-data["coilweight"])/(data["density"]*2.41);
 			return result.toFixed(2);
 		});
 	}
 	function SmartScaleViewModel(parameters) {
+// Vars for runtime
 		var self = this;
 		self.printerState = parameters[0];
 		self.settings = parameters[1];
 		self.printerState.remainingstring = ko.observable("");
 		self.navBarMessage = ko.observable();
 		self.newref=ko.observable();
+// Modify Octoprint Status
 		self.onStartup = function(){
 			var element = $("#state").find(".accordion-inner [data-bind='text: stateString']");
 			if (element.length) {
 				element.after("<br>Filament: <strong><div style='display: inline' data-bind='html: remainingstring'></div></strong>");
 			};
 		};
+// Scale functions
 		self.tare = function(){
 			OctoPrint.simpleApiCommand("SmartScale", "tare", {});
 		};
@@ -71,6 +75,7 @@ $(function() {
 			OctoPrint.simpleApiCommand("SmartScale", "load", {"spoolweight": filament.spool(),"dens": filament.density()});
 			self.settings.saveData();
 		};
+// Messages to User
 		self.onDataUpdaterPluginMessage = function(plugin, data){
 			if (plugin=="SmartScale") {
 				if (data.hasOwnProperty("calcweight")) {
@@ -88,6 +93,7 @@ $(function() {
 				};
 			};
 		};
+// Manage Spools
 		self.addFilament = function() {
 			datestring = new Date();
 			self.settings.settings.plugins.SmartScale.filaments().push(
