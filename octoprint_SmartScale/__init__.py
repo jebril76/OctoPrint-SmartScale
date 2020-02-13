@@ -215,7 +215,12 @@ class SmartScalePlugin(
 		return dict(
 			SmartScalePlugin=dict(
 				displayName="SmartScale",
-				displayVersion=self._plugin_version
+				displayVersion=self._plugin_version,
+		                type="github_release",
+                		user="Jebril76",
+                		repo="OctoPrint-SmartScale",
+                		current=self._plugin_version,
+		                pip="https://github.com/jebril76/OctoPrint-SmartScale/archive/master.zip"			
 			)
 		)
 __plugin_name__ = "SmartScale"
