@@ -3,6 +3,6 @@
     cursor: not-allowed;
     user-select: none;
 }
-.activeFilament{
+.active_filament{
     color: red;
 }

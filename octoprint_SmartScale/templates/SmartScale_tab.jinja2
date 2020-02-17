@@ -4,7 +4,7 @@
 		<label class="control-label">{{ _('Empty Spool:') }}</label>
 		<div class="controls">
 			<div class="input-append">
-				<input type="text" class="input-mini" style="text-align:right;" data-bind="value: settings.settings.plugins.SmartScale.spool_weight">
+				<input type="text" class="input-mini" style="text-align:right;" data-bind="value: spool_weight">
 				<span class="add-on" >g</span>
 			</div>
 		</div>
@@ -13,7 +13,7 @@
 		<label class="control-label">{{ _('Density:') }}</label>
 		<div class="controls">
 			<div class="input-append">
-				<input type="text" class="input-mini" style="text-align:right;" data-bind="value: settings.settings.plugins.SmartScale.material_density">
+				<input type="text" class="input-mini" style="text-align:right;" data-bind="value: material_density">
 				<span class="add-on">g/cm<span><sup>3</sup></span></span>
 			</div>
 		</div>
@@ -22,7 +22,7 @@
 		<label class="control-label">{{ _('Filamentname:') }}</label>
 		<div class="controls">
 			<div class="input-append">
-				<input type="text" class="input-mini" data-bind="value: settings.settings.plugins.SmartScale.newFilament">
+				<input type="text" class="input-mini" data-bind="value: newFilament">
 				<button class="btn" type="button" data-bind="click: addFilament">Add Filament</button>
 			</div>
 		</div>
@@ -33,7 +33,7 @@
 				<th align=left>Load Settings</th><th>Date</th><th align=right>Weight</th><th align=right>Length</th><th>Empty</th><th>Density</th><th>Remove</th>
 			</tr>
 		</thead>
-		<tbody data-bind="foreach: settings.settings.plugins.SmartScale.filaments">
+		<tbody data-bind="foreach: filaments">
 			<tr>
 				<td><a href="#" data-bind="click: function(data, event) {$root.loadFilament($index, data, event);}, text: fila"></a></td>
 				<td data-bind="text: date"></td>
@@ -41,8 +41,7 @@
 				<td align=right data-bind="text: length"></td>
 				<td align=right data-bind="text: spool"></td>
 				<td align=right data-bind="text: density"></td>
-				<td align=right><a href="#" data-bind="click: function(data, event) {$root.removeFilament($index, data, event);}, visible: $root.settings.settings.plugins.SmartScale.activefilament()!==$index()">Delete</a><span class="activeFilament" data-bind="visible: $root.settings.settings.plugins.SmartScale.activefilament()===$index()">Active</span>
-				<input type="hidden" data-bind="value: weight">
+				<td align=right><a href="#" data-bind="click: function(data, event) {$root.removeFilament($index, data, event);}, visible: $root.active_filament()!==$index()">Delete</a><span class="active_filament" data-bind="visible: $root.active_filament()===$index()">Active</span>
 				</td>
 			</tr>
 		</tbody>

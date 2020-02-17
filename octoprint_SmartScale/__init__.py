@@ -1,6 +1,7 @@
 # coding=utf-8
 ###
 ###
+###  self._logger.info("test")
 ###
 from __future__ import absolute_import
 import sys
@@ -15,7 +16,12 @@ import glob
 import serial
 import octoprint.plugin
 import octoprint.events
+import octoprint.filemanager
+import octoprint.filemanager.util
 from octoprint.util import RepeatedTimer
+import ast
+import json
+
 
 class SmartScalePlugin(
 	octoprint.plugin.StartupPlugin,
@@ -33,27 +39,22 @@ class SmartScalePlugin(
 		return dict(
 			referenceweight = 100,
 			coilweight=100,
-			spool_weight=50,
 			altitude=59,
 			containersize=10.6,
 			heatertemp=0,
-			filamentsonmain="0",
 			navweight="0",
 			navlength="0",
 			navtemp="0",
 			navhumi="0",
 			navwater="0",
 			navpressure="0",
-			material_density=1.24,
-			settingsweight=0,
-			activefilament=0,
-			filaments=[{"date": "01.01.2020, 01:01:01", "density": 1.24, "fila": "Pla", "filaweight": 0, "length": 100, "spool": 50, "weight": 0}],
 			)
 	def on_startup(self, host, port):
 		self.navlist=[]
-		self.spool_weight = float(self._settings.get(["spool_weight"]))
-		self.density = float(float(self._settings.get(["material_density"]))*2.41)
-		self.filaments = self._settings.get(["filaments"]);
+		self.filaments=[{"filaweight": 0, "weight": 0, "density": 1.24, "fila": "Pla", "spool": 50, "length": 100, "date": "01.01.2020, 01:01:01"}]
+		self.active_filament=0
+		self.filalength=10000
+		self.filaments_load()
 		self.usbCon = None
 		self.settings_changed()
 		self.connect()
@@ -105,16 +106,15 @@ class SmartScalePlugin(
 		counter=0
 		while self.usbCon != None:
 			try:
+				line = self.usbCon.readline()
 				line = self.usbCon.readline().strip().decode('ascii')
 				if line:
 					if line.startswith('[U:') and line.endswith(']'):
 						counter=0
 						line = line[1:-1]
 						feed = line.split(';')
-						self._settings.set(['settingsweight'], feed[0][2:])
-						self._settings.set(['settingscalcweight'], feed[1][2:])
-						self._settings.set(['settingslength'], feed[2][2:])
-						self._plugin_manager.send_plugin_message(self._identifier, dict(calcweight=feed[1][2:], length=feed[2][2:]))
+						self.filalength=feed[2][2:]
+						self._plugin_manager.send_plugin_message(self._identifier, dict(weight=feed[0][2:], calcweight=feed[1][2:], length=feed[2][2:]))
 						if len(self.navlist)>0:
 							self.navbar = ""
 							for item in self.navlist:
@@ -123,7 +123,7 @@ class SmartScalePlugin(
 				else:
 					counter=counter+1
 					self._logger.info("SmartScale Timeout nr" + counter)
-					if counter>60:
+					if counter>100:
 						self.usbCon = None
 						if self.thread and threading.current_thread() != self.thread:
 							self.thread.join()
@@ -139,19 +139,16 @@ class SmartScalePlugin(
 				self.error = "Connection lost"
 		self._plugin_manager.send_plugin_message(self._identifier, dict(remainingstring=self.error, weight="Error"))
 	def get_api_commands(self):
-		return dict( reconnect=[], savefilaments=["filas"], load=["spoolweight", "dens"], tare=[], cali=["cali"], cont=[], alti=[], heat=[], wifion=[], wifioff=[], ssid=["ssid", "pass"])
+		return dict( reconnect=[], savefilaments=["active_filament", "filaments"], load=["spoolweight", "dens"], tare=[], cali=["cali"], cont=[], alti=[], heat=[], wifion=[], wifioff=[], ssid=["ssid", "pass"])
 	def on_api_command(self, command, data):
 		import flask
-		if command == 'reconnect':
+		if command == 'reconnect' and self.usbCon == None:
 			self.error=""
 			self.connect()
 		if self.usbCon != None:
 			if command == 'ssid':
 				self.usbCon.write(("<ssid:%s>" % data["ssid"]).encode())
 				self.usbCon.write(("<pass:%s>" % data["pass"]).encode())
-			if command == 'load':
-				self.usbCon.write("<dens:%f>" % float(data["dens"]))
-				self.usbCon.write("<spow:%.2f>" % float(data["spoolweight"]))
 			if command == 'tare':
 				self.usbCon.write("<tara:1>")
 			if command == 'cali':
@@ -162,12 +159,17 @@ class SmartScalePlugin(
 				self.usbCon.write("<alti:%.2f>" % float(self._settings.get(["altitude"])))
 			if command == 'heat':
 				self.usbCon.write("<heat:%.2f>" % float(self._settings.get(["heatertemp"])))
-			if command == 'wifion':
-				self.usbCon.write("<wifi:1>")
-			if command == 'wifioff':
-				self.usbCon.write("<wifi:0>")
+##			if command == 'wifion':
+##				self.usbCon.write("<wifi:1>")
+##			if command == 'wifioff':
+##				self.usbCon.write("<wifi:0>")
+			if command == 'load':
+				self.usbCon.write("<dens:%.8f>" % float(data["dens"]))
+				self.usbCon.write("<spow:%.2f>" % float(data["spoolweight"]))
 			if command == 'savefilaments':
-				self._logger.info()
+				self.filaments=json.loads(data["filaments"])
+				self.active_filament=data["active_filament"]
+				self.filaments_save()
 	def on_settings_save(self, data):
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		self.settings_changed()
@@ -187,35 +189,60 @@ class SmartScalePlugin(
 		if self._settings.get(["navpressure"])=="1":
 			self.navlist.append(6)
 		if self.usbCon != None:
-			self.connect();
 			self.usbCon.write("<coil:%.2f>" % float(self._settings.get(["coilweight"])))
 			self.usbCon.write("<cont:%.2f>" % float(self._settings.get(["containersize"])))
 			self.usbCon.write("<alti:%.2f>" % float(self._settings.get(["altitude"])))
 			self.usbCon.write("<heat:%.2f>" % float(self._settings.get(["heatertemp"])))
-			self.usbCon.write("<dens:%f>" % float(self.filaments[activefilament]["density"]))
-			self.usbCon.write("<spow:%.2f>" % float(self.filaments[activefilament]["spool"]))
+			self.usbCon.write("<dens:%.6f>" % float(self.filaments[self.active_filament]["density"]))
+			self.usbCon.write("<spow:%.2f>" % float(self.filaments[self.active_filament]["spool"]))
 	def on_event(self, event, payload):
-		if event == "ClientAuthed":
+		if event == "ClientOpened" or event == "ClientAuthed":
 			self._plugin_manager.send_plugin_message(self._identifier, dict(remainingstring=self.error, weight="Error"))
+			self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
 		if event in "PrintStarted":
-			if isinstance(self._settings.get(["settingslength"]), float):
+			if isinstance(self.filalength, float):
 				self.job=self._printer.get_current_job()
 				self.job=self.job['filament'][u'tool0'][u'length']
 				self.job=float(self.job)/100
-				if self.job>self._settings.get(["settingslength"]):
-					self._logger.info("Alarm! ({0:.2f}/{1:.2f})".format(self._settings.get(["settingslength"]),self.job))
-					self._plugin_manager.send_plugin_message(self._identifier, dict(alert="Printer Paused: Filament low ({0:.2f}/{1:.2f})".format(self._settings.get(["settingslength"]),self.job)))
+				if self.job>self.filalength:
+					self._logger.info("Alarm! ({0:.2f}/{1:.2f})".format(self.filalength,self.job))
+					self._plugin_manager.send_plugin_message(self._identifier, dict(alert="Printer Paused: Filament low ({0:.2f}/{1:.2f})".format(self.filalength,self.job)))
 					self._printer.pause_print()
 					self._printer.pause_print()
 					self._printer.pause_print()
 					self._printer.pause_print()
 			else:
 				self._logger.info("Not engough Filament on Spool!")
+	def filaments_load(self):
+		data_folder = self.get_plugin_data_folder()
+		try:
+			file_obj = open(data_folder + '/Filaments.ini', 'rb')
+			self.active_filament=int(file_obj.readline().strip())
+			self.filaments=json.loads(file_obj.readline())
+			file_obj.close()
+		except IOError:
+			self._logger.info("Filaments File not found!")
+			self.filaments_save()
+		self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
+	def filaments_save(self):
+		data_folder = self.get_plugin_data_folder()
+		try:
+			file_obj = open(data_folder + '/Filaments.ini', 'wb')
+			file_obj.write(str(self.active_filament) + "\n" + json.dumps(self.filaments, sort_keys=True))
+			file_obj.close()
+			self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
+		except IOError:
+			self._logger.info("Could not save Filaments File!")
 	def get_update_information(self):
 		return dict(
 			SmartScalePlugin=dict(
 				displayName="SmartScale",
-				displayVersion=self._plugin_version
+				displayVersion=self._plugin_version,
+				type="github_release",
+				user="Jebril76",
+				repo="OctoPrint-SmartScale",
+				current=self._plugin_version,
+				pip="https://github.com/jebril76/OctoPrint-SmartScale/archive/master.zip"
 			)
 		)
 __plugin_name__ = "SmartScale"

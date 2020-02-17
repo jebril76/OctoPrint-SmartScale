@@ -2,36 +2,36 @@ $(function() {
 // Define Filament
 	function Filament(data) {
 		var self = this;
-		self.date = ko.computed(function(){
-			return data["date"];
-		});
-		self.fila = ko.computed(function(){
-			if (data["fila"]=="") {
-				return "unnamed";
-			}
-			else {
-				return data["fila"];
-			}
-		});
-		self.weight = ko.computed(function(){
-			return data["weight"];
-		});
-		self.spool = ko.computed(function(){
-			return data["spool"];
-		});
-		self.density = ko.computed(function(){
-			return data["density"];
-		});
 		self.filaweight = ko.computed(function(){
 			result= (data["weight"]-data["spool"]-data["coilweight"]);
 			return result.toFixed(2);
 		});
-		self.length = ko.computed(function() {
+		self.weight = ko.computed(function(){
+			return data["weight"];
+		});
+		self.density = ko.computed(function(){
+			return data["density"];
+		});
+		self.fila = ko.computed(function(){
+			if (data["fila"]=="" || !data["fila"]){
+				return "unnamed";
+			}
+			else {
+			return data["fila"];
+			}
+		});
+		self.spool = ko.computed(function(){
+			return data["spool"];
+		});
+		self.length = ko.computed(function(){
 			result = (data["weight"]-data["spool"]-data["coilweight"])/(data["density"]*2.41);
 			return result.toFixed(2);
 		});
-	}
-	function SmartScaleViewModel(parameters) {
+		self.date = ko.computed(function(){
+			return data["date"];
+		});
+	};
+	function SmartScaleViewModel(parameters){
 // Vars for runtime
 		var self = this;
 		self.printerState = parameters[0];
@@ -39,6 +39,12 @@ $(function() {
 		self.printerState.remainingstring = ko.observable("");
 		self.navBarMessage = ko.observable();
 		self.newref=ko.observable();
+		self.active_filament=ko.observable(0);
+		self.newFilament=ko.observable("New");
+		self.spool_weight=ko.observable(100);
+		self.settingsweight=ko.observable(0);
+		self.material_density=ko.observable(1.24);
+		self.filaments=ko.observableArray();
 // Modify Octoprint Status
 		self.onStartup = function(){
 			var element = $("#state").find(".accordion-inner [data-bind='text: stateString']");
@@ -53,10 +59,10 @@ $(function() {
 		self.cali = function(){
 			OctoPrint.simpleApiCommand("SmartScale", "cali", {"cali":self.settings.settings.plugins.SmartScale.referenceweight()});
 		};
-		self.startwifi = function() {
+/*		self.startwifi = function(){
 			OctoPrint.simpleApiCommand("SmartScale", "wifion", {});
 		};
-		self.ssid = function() {
+		self.ssid = function(){
 			var ssid = prompt("Enter your networks Name:");
 			var pass = prompt("Enter your networks Password:");
 			OctoPrint.simpleApiCommand("SmartScale", "ssid", {"ssid":ssid, "pass":pass});
@@ -64,22 +70,49 @@ $(function() {
 		self.stopwifi = function() {
 			OctoPrint.simpleApiCommand("SmartScale", "wifioff", {});
 		};
+*/
 		self.reconnect = function() {
 			OctoPrint.simpleApiCommand("SmartScale", "reconnect", {});
 		};
+// Manage Spools
 		self.loadFilament = function(index, filament) {
-			self.settings.settings.plugins.SmartScale.activefilament(index());
-			self.settings.settings.plugins.SmartScale.newFilament=filament.fila();
-			self.settings.settings.plugins.SmartScale.spool_weight(filament.spool());
-			self.settings.settings.plugins.SmartScale.material_density(filament.density());
-			OctoPrint.simpleApiCommand("SmartScale", "load", {"spoolweight": filament.spool(),"dens": filament.density()});
-			self.settings.saveData();
+			self.active_filament(index());
+			self.newFilament(self.filaments()[self.active_filament()].fila)
+			self.spool_weight(self.filaments()[self.active_filament()].spool);
+			self.material_density(self.filaments()[self.active_filament()].density);
+			OctoPrint.simpleApiCommand("SmartScale", "load", {"spoolweight": self.spool_weight(), "dens": self.material_density()});
+			OctoPrint.simpleApiCommand("SmartScale", "savefilaments", {"active_filament":index(), "filaments": ko.toJSON(self.filaments)});
+		};
+		self.addFilament = function() {
+			datestring = new Date();
+			self.filaments.remove( function (item) {
+				return item.fila == self.newFilament();
+			})
+			self.filaments.push(
+				new Filament({
+					weight: parseFloat(self.settingsweight()),
+					density: parseFloat(self.material_density()),
+					spool: parseFloat(self.spool_weight()),
+					fila: self.newFilament(),
+					date: datestring.toLocaleString(),
+					coilweight: parseFloat(self.settings.settings.plugins.SmartScale.coilweight())
+				})
+			);
+			OctoPrint.simpleApiCommand("SmartScale", "savefilaments", {"active_filament": self.filaments().length-1, "filaments": ko.toJSON(self.filaments)});
+		};
+		self.removeFilament = function(index, filament) {
+			if (index()<self.active_filament()) {
+				self.active_filament(self.active_filament()-1);
+			}
+			self.filaments.remove(filament);
+			OctoPrint.simpleApiCommand("SmartScale", "savefilaments", {"active_filament":self.active_filament(), "filaments": ko.toJSON(self.filaments)});
 		};
 // Messages to User
 		self.onDataUpdaterPluginMessage = function(plugin, data){
 			if (plugin=="SmartScale") {
-				if (data.hasOwnProperty("calcweight")) {
+				if (data.hasOwnProperty("weight")) {
 					self.printerState.remainingstring(parseFloat(data.length) + "m (" + parseFloat(data.calcweight) + "g)");
+					self.settingsweight(data.weight);
 				};
 				if (data.hasOwnProperty("navBarMessage")) {
 					self.navBarMessage(data.navBarMessage);
@@ -91,29 +124,14 @@ $(function() {
 						type: 'error'
 					});
 				};
+				if (data.hasOwnProperty("filaments")) {
+					self.filaments(data.filaments);
+					self.active_filament(data.active_filament);
+					self.newFilament(self.filaments()[self.active_filament()]["fila"])
+					self.spool_weight(self.filaments()[self.active_filament()]["spool"]);
+					self.material_density(self.filaments()[self.active_filament()]["density"]);
+				};
 			};
-		};
-// Manage Spools
-		self.addFilament = function() {
-			datestring = new Date();
-			self.settings.settings.plugins.SmartScale.filaments().push(
-				new Filament({
-					date: datestring.toLocaleString(),
-					fila: self.settings.settings.plugins.SmartScale.newFilament,
-					weight: parseFloat(self.settings.settings.plugins.SmartScale.settingsweight()),
-					spool: parseFloat(self.settings.settings.plugins.SmartScale.spool_weight()),
-					density: parseFloat(self.settings.settings.plugins.SmartScale.material_density()),
-					coilweight: parseFloat(self.settings.settings.plugins.SmartScale.coilweight())
-				})
-			);
-			self.settings.saveData();
-		};
-		self.removeFilament = function(index, filament) {
-			if (index()<self.settings.settings.plugins.SmartScale.activefilament()) {
-				self.settings.settings.plugins.SmartScale.activefilament(self.settings.settings.plugins.SmartScale.activefilament()-1);
-			}
-			self.settings.settings.plugins.SmartScale.filaments.remove(filament);
-			self.settings.saveData();
 		};
 	};
 	OCTOPRINT_VIEWMODELS.push({
