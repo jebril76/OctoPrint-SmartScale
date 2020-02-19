@@ -114,6 +114,10 @@ $(function() {
 					self.printerState.remainingstring(parseFloat(data.length) + "m (" + parseFloat(data.calcweight) + "g)");
 					self.settingsweight(data.weight);
 				};
+				if (data.hasOwnProperty("error")) {
+					self.printerState.remainingstring(data.error);
+					self.settingsweight("Error");
+				};
 				if (data.hasOwnProperty("navBarMessage")) {
 					self.navBarMessage(data.navBarMessage);
 				};

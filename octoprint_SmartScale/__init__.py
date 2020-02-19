@@ -1,7 +1,6 @@
 # coding=utf-8
 ###
 ###
-###  self._logger.info("test")
 ###
 from __future__ import absolute_import
 import sys
@@ -68,6 +67,7 @@ class SmartScalePlugin(
 				if self.thread == None and port != self._printer.get_current_connection()[1]:
 					try:
 						self.usbCon = serial.Serial(port, 115200, timeout=0.5)
+						line = self.usbCon.readline()
 						line = self.usbCon.readline().strip().decode('ascii')
 						if line:
 							if line.startswith('[U:') and line.endswith(']'):
@@ -83,7 +83,8 @@ class SmartScalePlugin(
 						self.usbCon = None
 		if self.usbCon == None:
 			self.error="No Scale found"
-			self._plugin_manager.send_plugin_message(self._identifier, dict(remainingstring=self.error, weight="Error"))
+			self._logger.info("SmartScale - " + self.error)
+			self._plugin_manager.send_plugin_message(self._identifier, dict(error=self.error))
 	def scanusb(self):
 		if sys.platform.startswith('win'):
 			ports = ['COM%s' % (i + 1) for i in range(256)]
@@ -103,14 +104,13 @@ class SmartScalePlugin(
 				pass
 		return result
 	def readusb(self):
-		counter=0
+		timer=time.time()
 		while self.usbCon != None:
 			try:
-				line = self.usbCon.readline()
 				line = self.usbCon.readline().strip().decode('ascii')
 				if line:
 					if line.startswith('[U:') and line.endswith(']'):
-						counter=0
+						timer=time.time()
 						line = line[1:-1]
 						feed = line.split(';')
 						self.filalength=feed[2][2:]
@@ -120,24 +120,26 @@ class SmartScalePlugin(
 							for item in self.navlist:
 								self.navbar = self.navbar + feed[item]+" "
 							self._plugin_manager.send_plugin_message(self._identifier, dict(navBarMessage=self.navbar))
+					else:
+						self._logger.info("SmartScale USB Connection Timeout " + time.time()-timer)
+						if time.time()-timer>3:
+							self.error = "Corrupt Data"
+							break
 				else:
-					counter=counter+1
-					self._logger.info("SmartScale Timeout nr" + counter)
-					if counter>100:
-						self.usbCon = None
-						if self.thread and threading.current_thread() != self.thread:
-							self.thread.join()
-						self.thread = None
-						self.error = "Connection lost"
-						return false
+					self._logger.info("SmartScale USB Connection Timeout " + time.time()-timer)
+					if time.time()-timer>3:
+						self.error = "No Data"
 						break
 			except (OSError, serial.SerialException):
-				self.usbCon = None
-				if self.thread and threading.current_thread() != self.thread:
-					self.thread.join()
-				self.thread = None
 				self.error = "Connection lost"
-		self._plugin_manager.send_plugin_message(self._identifier, dict(remainingstring=self.error, weight="Error"))
+				break
+		self.usbCon = None
+		if self.thread and threading.current_thread() != self.thread:
+			self.thread.join()
+		self.thread = None
+		self._logger.info("SmartScale - " + self.error)
+		self._plugin_manager.send_plugin_message(self._identifier, dict(error=self.error))
+		return false
 	def get_api_commands(self):
 		return dict( reconnect=[], savefilaments=["active_filament", "filaments"], load=["spoolweight", "dens"], tare=[], cali=["cali"], cont=[], alti=[], heat=[], wifion=[], wifioff=[], ssid=["ssid", "pass"])
 	def on_api_command(self, command, data):
@@ -197,7 +199,7 @@ class SmartScalePlugin(
 			self.usbCon.write("<spow:%.2f>" % float(self.filaments[self.active_filament]["spool"]))
 	def on_event(self, event, payload):
 		if event == "ClientOpened" or event == "ClientAuthed":
-			self._plugin_manager.send_plugin_message(self._identifier, dict(remainingstring=self.error, weight="Error"))
+			self._plugin_manager.send_plugin_message(self._identifier, dict(error=self.error))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
 		if event in "PrintStarted":
 			if isinstance(self.filalength, float):
