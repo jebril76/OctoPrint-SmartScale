@@ -108,12 +108,13 @@ class SmartScalePlugin(
 		while self.usbCon != None:
 			try:
 				line = self.usbCon.readline().strip().decode('ascii')
+##				self._logger.info(line)
 				if line:
 					if line.startswith('[U:') and line.endswith(']'):
 						timer=time.time()
-						line = line[1:-1]
-						feed = line.split(';')
+						feed = line[1:-1].split(';')
 						self.filalength=feed[2][2:]
+##						self._logger.info(feed[2][2:])
 						self._plugin_manager.send_plugin_message(self._identifier, dict(weight=feed[0][2:], calcweight=feed[1][2:], length=feed[2][2:]))
 						if len(self.navlist)>0:
 							self.navbar = ""
@@ -166,6 +167,7 @@ class SmartScalePlugin(
 ##			if command == 'wifioff':
 ##				self.usbCon.write("<wifi:0>")
 			if command == 'load':
+#				self._logger.info("SmartScale - load: %.2f" % float(data["spoolweight"]))
 				self.usbCon.write("<dens:%.8f>" % float(data["dens"]))
 				self.usbCon.write("<spow:%.2f>" % float(data["spoolweight"]))
 			if command == 'savefilaments':
