@@ -36,8 +36,9 @@ class SmartScalePlugin(
 			less=["less/SmartScale.less"])
 	def get_settings_defaults(self):
 		return dict(
-			referenceweight = 100,
-			coilweight=100,
+			filamenttab="1",
+			referenceweight = 1200,
+			coilweight=180,
 			altitude=59,
 			containersize=10.6,
 			heatertemp=0,
@@ -114,7 +115,6 @@ class SmartScalePlugin(
 						timer=time.time()
 						feed = line[1:-1].split(';')
 						self.filalength=feed[2][2:]
-##						self._logger.info(feed[2][2:])
 						self._plugin_manager.send_plugin_message(self._identifier, dict(weight=feed[0][2:], calcweight=feed[1][2:], length=feed[2][2:]))
 						if len(self.navlist)>0:
 							self.navbar = ""
@@ -167,7 +167,6 @@ class SmartScalePlugin(
 ##			if command == 'wifioff':
 ##				self.usbCon.write("<wifi:0>")
 			if command == 'load':
-#				self._logger.info("SmartScale - load: %.2f" % float(data["spoolweight"]))
 				self.usbCon.write("<dens:%.8f>" % float(data["dens"]))
 				self.usbCon.write("<spow:%.2f>" % float(data["spoolweight"]))
 			if command == 'savefilaments':

@@ -59,6 +59,17 @@
 			</div>
 			<div id="SmartScale_settings" class="tab-pane">
 				<div class="control-group">
+					<label class="control-label">{{ _('Filament tab on mainscreen') }}</label>
+					<div class="controls">
+						<div class="control-label">
+							<label><input type="radio" name="filamenttab" value="1" data-bind="checked: settings.settings.plugins.SmartScale.filamenttab" /> {{ _('show') }}</label>
+						</div>
+						<div class="control-label">
+							<label><input type="radio" name="filamenttab" value="0" data-bind="checked: settings.settings.plugins.SmartScale.filamenttab" /> {{ _('hide') }}</label>
+						</div>
+					</div>
+				</div>
+				<div class="control-group">
 					<label class="control-label">{{ _('Coilweight:') }}</label>
 					<div class="controls">
 						<div class="input-append">

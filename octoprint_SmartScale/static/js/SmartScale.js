@@ -52,6 +52,36 @@ $(function() {
 				element.after("<br>Filament: <strong><div style='display: inline' data-bind='html: remainingstring'></div></strong>");
 			};
 		};
+		self.onAfterBinding = function(){
+			if (self.settings.settings.plugins.SmartScale.filamenttab()=="0") {
+				self.link=$('#tab_plugin_SmartScale_link').detach();
+				self.tab=$('#filamenttab').detach();
+				$('#tab_plugin_SmartScale').removeClass('active');
+				$('#control_link').addClass("active");
+				$('#control').addClass("active");
+			}
+			
+		}
+		self.onSettingsBeforeSave = function(){
+			if (self.settings.settings.plugins.SmartScale.filamenttab()=="0") {
+				self.link=$('#tab_plugin_SmartScale_link').removeClass('active').detach();
+				self.tab=$('#filamenttab').detach();
+				$('#tab_plugin_SmartScale').removeClass('active');
+				$('#control_link').addClass("active");
+				$('#control').addClass("active");
+			} else {
+				if (self.tab) {
+					var bob = document.getElementById('SmartScale_filament');
+					bob.id="filamenttab";
+					self.tab=bob;
+					self.tab.classList.remove('active');
+				}
+				$('#tabs').append(self.link);
+				$('#filamenttab_place').append(self.tab);
+				self.link = null;
+				self.tab = null;
+			}
+		}
 // Scale functions
 		self.tare = function(){
 			OctoPrint.simpleApiCommand("SmartScale", "tare", {});
