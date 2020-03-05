@@ -1,19 +1,8 @@
 OctoPrint Plugin SmartScale
 =========================
 
-This plugin will let your Octoprint connect to a ESP8266 based Filament Scale. It will show the remaining Filament under the actual Status and warn you if there is not enough Filament left, when starting a new printjob. 
-
-BOM for the SmartScale:
-
-1 ESP8266 Wemos D1 Mini
-
-1 BME280 (4 Pin Version)
-
-2 Loadcells 5kg
-
-1 Hx711 Modul
-
-1 Ssd1306
+You will find everything in the Wiki.
+https://github.com/jebril76/OctoPrint-SmartScale/wiki
 
 
 
