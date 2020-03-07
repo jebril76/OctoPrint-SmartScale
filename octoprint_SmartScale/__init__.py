@@ -220,8 +220,10 @@ class SmartScalePlugin(
 		data_folder = self.get_plugin_data_folder()
 		try:
 			file_obj = open(data_folder + '/Filaments.ini', 'rb')
-			self.active_filament=int(file_obj.readline().strip())
-			self.filaments=json.loads(file_obj.readline())
+			line = file_obj.readline().strip()
+			if line:			
+				self.active_filament=int(line)
+				self.filaments=json.loads(file_obj.readline())
 			file_obj.close()
 		except IOError:
 			self._logger.info("Filaments File not found!")
