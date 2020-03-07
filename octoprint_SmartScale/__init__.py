@@ -192,16 +192,21 @@ class SmartScalePlugin(
 		if self._settings.get(["navpressure"])=="1":
 			self.navlist.append(6)
 		if self.usbCon != None:
-			self.usbCon.write("<coil:%.2f>" % float(self._settings.get(["coilweight"])))
-			self.usbCon.write("<cont:%.2f>" % float(self._settings.get(["containersize"])))
-			self.usbCon.write("<alti:%.2f>" % float(self._settings.get(["altitude"])))
-			self.usbCon.write("<heat:%.2f>" % float(self._settings.get(["heatertemp"])))
-			self.usbCon.write("<dens:%.6f>" % float(self.filaments[self.active_filament]["density"]))
-			self.usbCon.write("<spow:%.2f>" % float(self.filaments[self.active_filament]["spool"]))
+			self.usbCon.write("<coil:%.2f>".encode() % float(self._settings.get(["coilweight"])))
+			self.usbCon.write("<cont:%.2f>".encode() % float(self._settings.get(["containersize"])))
+			self.usbCon.write("<alti:%.2f>".encode() % float(self._settings.get(["altitude"])))
+			self.usbCon.write("<heat:%.2f>".encode() % float(self._settings.get(["heatertemp"])))
+			self.usbCon.write("<dens:%.6f>".encode() % float(self.filaments[self.active_filament]["density"]))
+			self.usbCon.write("<spow:%.2f>".encode() % float(self.filaments[self.active_filament]["spool"]))
 	def on_event(self, event, payload):
-		if event == "ClientOpened" or event == "ClientAuthed":
-			self._plugin_manager.send_plugin_message(self._identifier, dict(error=self.error))
-			self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
+		if sys.version_info> (3,0):
+			if event == "ClientAuthed":
+				self._plugin_manager.send_plugin_message(self._identifier, dict(error=self.error))
+				self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
+		else:
+			if event == "ClientOpened":
+				self._plugin_manager.send_plugin_message(self._identifier, dict(error=self.error))
+				self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
 		if event in "PrintStarted":
 			if isinstance(self.filalength, float):
 				self.job=self._printer.get_current_job()
@@ -222,7 +227,10 @@ class SmartScalePlugin(
 			file_obj = open(data_folder + '/Filaments.ini', 'rb')
 			line = file_obj.readline().strip()
 			if line:			
-				self.active_filament.from_bytes(line, byteorder='big')
+				if sys.version_info> (3,0):
+					self.active_filament.from_bytes(line, byteorder='big')
+				else:
+					self.active_filament=int(line)
 				self.filaments=json.loads(file_obj.readline())
 			file_obj.close()
 		except IOError:
@@ -233,7 +241,10 @@ class SmartScalePlugin(
 		data_folder = self.get_plugin_data_folder()
 		try:
 			file_obj = open(data_folder + '/Filaments.ini', 'wb')
-			file_obj.write((self.active_filament).to_bytes(2, byteorder='big') + b'\n' + json.dumps(self.filaments).encode())
+			if sys.version_info> (3,0):
+				file_obj.write((self.active_filament).to_bytes(2, byteorder='big') + b'\n' + json.dumps(self.filaments).encode())
+			else:
+				file_obj.write(str(self.active_filament) + "\n" + json.dumps(self.filaments, sort_keys=True))
 			file_obj.close()
 			self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
 		except IOError:
