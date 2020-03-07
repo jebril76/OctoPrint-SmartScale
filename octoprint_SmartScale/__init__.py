@@ -149,26 +149,26 @@ class SmartScalePlugin(
 			self.error=""
 			self.connect()
 		if self.usbCon != None:
-			if command == 'ssid':
-				self.usbCon.write(("<ssid:%s>" % data["ssid"]).encode())
-				self.usbCon.write(("<pass:%s>" % data["pass"]).encode())
 			if command == 'tare':
-				self.usbCon.write("<tara:1>")
+				self.usbCon.write("<tara:1>".encode())
 			if command == 'cali':
-				self.usbCon.write("<cali:%.2f>" % float(data["cali"]))
+				self.usbCon.write("<cali:%.2f>".encode() % float(data["cali"]))
 			if command == 'cont':
-				self.usbCon.write("<cont:%.2f>" % float(self._settings.get(["containersize"])))
+				self.usbCon.write("<cont:%.2f>".encode() % float(self._settings.get(["containersize"])))
 			if command == 'alti':
-				self.usbCon.write("<alti:%.2f>" % float(self._settings.get(["altitude"])))
+				self.usbCon.write("<alti:%.2f>".encode() % float(self._settings.get(["altitude"])))
 			if command == 'heat':
-				self.usbCon.write("<heat:%.2f>" % float(self._settings.get(["heatertemp"])))
+				self.usbCon.write("<heat:%.2f>".encode() % float(self._settings.get(["heatertemp"])))
 ##			if command == 'wifion':
-##				self.usbCon.write("<wifi:1>")
+##				self.usbCon.write("<wifi:1>".encode())
 ##			if command == 'wifioff':
-##				self.usbCon.write("<wifi:0>")
+##				self.usbCon.write("<wifi:0>".encode())
+##			if command == 'ssid':
+##				self.usbCon.write("<ssid:%s>".encode() % data["ssid"])
+##				self.usbCon.write("<pass:%s>".encode() % data["pass"])
 			if command == 'load':
-				self.usbCon.write("<dens:%.8f>" % float(data["dens"]))
-				self.usbCon.write("<spow:%.2f>" % float(data["spoolweight"]))
+				self.usbCon.write("<dens:%.8f>".encode() % float(data["dens"]))
+				self.usbCon.write("<spow:%.2f>".encode() % float(data["spoolweight"]))
 			if command == 'savefilaments':
 				self.filaments=json.loads(data["filaments"])
 				self.active_filament=data["active_filament"]
@@ -222,7 +222,7 @@ class SmartScalePlugin(
 			file_obj = open(data_folder + '/Filaments.ini', 'rb')
 			line = file_obj.readline().strip()
 			if line:			
-				self.active_filament=int(line)
+				self.active_filament.from_bytes(line, byteorder='big')
 				self.filaments=json.loads(file_obj.readline())
 			file_obj.close()
 		except IOError:
@@ -233,7 +233,7 @@ class SmartScalePlugin(
 		data_folder = self.get_plugin_data_folder()
 		try:
 			file_obj = open(data_folder + '/Filaments.ini', 'wb')
-			file_obj.write(str(self.active_filament) + "\n" + json.dumps(self.filaments, sort_keys=True))
+			file_obj.write((self.active_filament).to_bytes(2, byteorder='big') + b'\n' + json.dumps(self.filaments).encode())
 			file_obj.close()
 			self._plugin_manager.send_plugin_message(self._identifier, dict(filaments=self.filaments, active_filament=self.active_filament))
 		except IOError:
