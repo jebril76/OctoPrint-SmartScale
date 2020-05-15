@@ -166,13 +166,13 @@ class SmartScalePlugin(
 ##			if command == 'ssid':
 ##				self.usbCon.write("<ssid:%s>".encode() % data["ssid"])
 ##				self.usbCon.write("<pass:%s>".encode() % data["pass"])
-			if command == 'load':
-				self.usbCon.write("<dens:%.8f>".encode() % float(data["dens"]))
-				self.usbCon.write("<spow:%.2f>".encode() % float(data["spoolweight"]))
-			if command == 'savefilaments':
-				self.filaments=json.loads(data["filaments"])
-				self.active_filament=data["active_filament"]
-				self.filaments_save()
+		if command == 'load':
+			self.usbCon.write("<dens:%.8f>".encode() % float(data["dens"]))
+			self.usbCon.write("<spow:%.2f>".encode() % float(data["spoolweight"]))
+		if command == 'savefilaments':
+			self.filaments=json.loads(data["filaments"])
+			self.active_filament=data["active_filament"]
+			self.filaments_save()
 	def on_settings_save(self, data):
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		self.settings_changed()
