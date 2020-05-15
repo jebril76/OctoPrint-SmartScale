@@ -118,9 +118,15 @@ $(function() {
 			self.filaments.remove( function (item) {
 				return item.fila == self.newFilament();
 			})
+			if (self.settingsweight()=="Error") {
+				var filweight = parseFloat(self.spool_weight()+self.settings.settings.plugins.SmartScale.coilweight())
+			}
+			else {
+				var filweight = parseFloat(self.settingsweight())
+			}
 			self.filaments.push(
 				new Filament({
-					weight: parseFloat(self.settingsweight()),
+					weight: filweight,
 					density: parseFloat(self.material_density()),
 					spool: parseFloat(self.spool_weight()),
 					fila: self.newFilament(),
