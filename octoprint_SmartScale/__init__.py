@@ -67,7 +67,7 @@ class SmartScalePlugin(
 			for port in self.usbports:
 				if self.thread == None and port != self._printer.get_current_connection()[1]:
 					try:
-						self.usbCon = serial.Serial(port, 115200, timeout=0.5)
+						self.usbCon = serial.Serial(port, 115200, timeout=3, write_timeout=0)
 						line = self.usbCon.readline()
 						line = self.usbCon.readline().strip().decode('ascii')
 						if line:
@@ -148,6 +148,10 @@ class SmartScalePlugin(
 		if command == 'reconnect' and self.usbCon == None:
 			self.error=""
 			self.connect()
+		if command == 'savefilaments':
+			self.filaments=json.loads(data["filaments"])
+			self.active_filament=data["active_filament"]
+			self.filaments_save()
 		if self.usbCon != None:
 			if command == 'tare':
 				self.usbCon.write("<tara:1>".encode())
@@ -159,6 +163,9 @@ class SmartScalePlugin(
 				self.usbCon.write("<alti:%.2f>".encode() % float(self._settings.get(["altitude"])))
 			if command == 'heat':
 				self.usbCon.write("<heat:%.2f>".encode() % float(self._settings.get(["heatertemp"])))
+			if command == 'load':
+				self.usbCon.write("<dens:%.8f>".encode() % float(data["dens"]))
+				self.usbCon.write("<spow:%.2f>".encode() % float(data["spoolweight"]))
 ##			if command == 'wifion':
 ##				self.usbCon.write("<wifi:1>".encode())
 ##			if command == 'wifioff':
@@ -166,13 +173,6 @@ class SmartScalePlugin(
 ##			if command == 'ssid':
 ##				self.usbCon.write("<ssid:%s>".encode() % data["ssid"])
 ##				self.usbCon.write("<pass:%s>".encode() % data["pass"])
-		if command == 'load':
-			self.usbCon.write("<dens:%.8f>".encode() % float(data["dens"]))
-			self.usbCon.write("<spow:%.2f>".encode() % float(data["spoolweight"]))
-		if command == 'savefilaments':
-			self.filaments=json.loads(data["filaments"])
-			self.active_filament=data["active_filament"]
-			self.filaments_save()
 	def on_settings_save(self, data):
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		self.settings_changed()
