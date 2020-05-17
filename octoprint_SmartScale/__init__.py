@@ -67,7 +67,7 @@ class SmartScalePlugin(
 			for port in self.usbports:
 				if self.thread == None and port != self._printer.get_current_connection()[1]:
 					try:
-						self.usbCon = serial.Serial(port, 115200, timeout=3, write_timeout=0)
+						self.usbCon = serial.Serial(port, 115200, timeout=1, write_timeout=0)
 						line = self.usbCon.readline()
 						line = self.usbCon.readline().strip().decode('ascii')
 						if line:
